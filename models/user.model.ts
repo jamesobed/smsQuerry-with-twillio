@@ -3,7 +3,9 @@ import { Schema, model } from "mongoose";
 export interface userAttributes {
   name: string;
   email: string;
+  password: string;
   phoneNumber?: string;
+  accessToken?: string;
 }
 
 export const UserSchema = new Schema<userAttributes>(
@@ -11,6 +13,11 @@ export const UserSchema = new Schema<userAttributes>(
     name: {
       type: String,
       required: [true, "full name is required"],
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, "password is required"],
       trim: true,
     },
     email: {
@@ -22,7 +29,11 @@ export const UserSchema = new Schema<userAttributes>(
     phoneNumber: {
       type: String,
       required: [true, "Please provide your phone number"],
-      unique: [true, "no duplicate email is allowed"],
+      unique: [true, "no duplicate phone number is allowed"],
+    },
+    accessToken: {
+      type: String,
+      trim: true,
     },
   },
   {

@@ -1,4 +1,7 @@
 import express from "express";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
 import { userInstance } from "../models/user.model";
 import { sendSms } from "../services/smsControl";
 
@@ -6,7 +9,7 @@ const router = express.Router();
 
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, phoneNumber } = req.body;
+    const { name, email, phoneNumber, password } = req.body;
 
     const newUser = await userInstance.create({
       name,
