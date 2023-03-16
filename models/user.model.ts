@@ -5,7 +5,7 @@ export interface userAttributes {
   email: string;
   password: string;
   phoneNumber?: string;
-  accessToken?: string;
+  refreshToken?: string;
 }
 
 export const UserSchema = new Schema<userAttributes>(
@@ -31,7 +31,7 @@ export const UserSchema = new Schema<userAttributes>(
       required: [true, "Please provide your phone number"],
       unique: [true, "no duplicate phone number is allowed"],
     },
-    accessToken: {
+    refreshToken: {
       type: String,
       trim: true,
     },

@@ -30,6 +30,7 @@ const start = async () => {
 
   try {
     await mongoose.connect(DB, {});
+    console.clear();
     console.log("Connected to MongoDb");
   } catch (err) {
     console.error(err);
