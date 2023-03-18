@@ -3,8 +3,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
 import { userInstance } from "../models/user.model";
-import { sendSms } from "../services/smsControl";
-import { isLoggedIn } from "../middleware/user.auth";
 
 const router = express.Router();
 
@@ -30,100 +28,63 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "fail to create user" });
   }
 });
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(401).send("please enter all the required input");
-    }
-
     const user = await userInstance.findOne({ email });
-
     if (!user) {
-      return res.send("This user is not registered");
+      return res.status(401).send("user not registered");
     }
-    const correct_password = await bcrypt.compare(password, user.password);
-
-    if (!correct_password) {
-      return res.send("invalid login credentials entered");
-    }
-    console.log("here");
-
-    let payload = { id: user._id };
-
-    const accessToken = await jwt.sign(
-      payload,
-      process.env.JWT_SECRET_ACCESS!,
-      {
-        expiresIn: "20s",
-      }
-    );
-    const refreshToken = await jwt.sign(
-      payload,
-      process.env.JWT_SECRET_REFRESH!
-    );
-
+    const id = user._id;
+    let refreshToken = "",
+      AccessToken = "";
+    refreshToken = jwt.sign({ id }, process.env.JWT_SECRET!);
+    AccessToken = jwt.sign({ id }, process.env.JWT_SECRET_ACCESS!, {
+      expiresIn: "30s",
+    });
     user.refreshToken = refreshToken;
     await user.save();
 
-    res.json({
-      message: "successfully logged in",
-      accessToken,
-      refreshToken,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "fail to login user" });
-  }
+    return res.status(201).json({ AccessToken, refreshToken });
+  } catch (error) {}
 });
 
-router.post("/refresh-token", async (req, res) => {
+router.post("/regenerate_access_token", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.body.refreshToken;
     if (!refreshToken) {
-      return res.status(401).send("please enter all the required input");
+      return res.send("please provide a refresh token");
     }
     const user = await userInstance.findOne({ refreshToken });
     if (!user) {
-      return res.status(401).send("invalid refresh token");
+      return res.send("invalid refresh token");
     }
-    const payload = { id: user._id };
-    const accessToken = await jwt.sign(
-      payload,
-      process.env.JWT_SECRET_ACCESS!,
-      {
-        expiresIn: "20s",
-      }
-    );
-    res.json({ accessToken });
+    const id = user._id;
+    const AccessToken = jwt.sign({ id }, process.env.JWT_SECRET_ACCESS!, {
+      expiresIn: "30s",
+    });
+    return res.send(AccessToken);
   } catch (error) {
-    res.status(500).json({ message: "fail to refresh token" });
+    return res.send("server error fail to regenerate access token");
   }
 });
 
 router.post("/logout", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    let refreshToken = req.body.refreshToken;
     if (!refreshToken) {
-      return res.status(401).send("please enter all the required input");
+      return res.send("please provide a refesh token");
     }
-    const user = await userInstance.findOne({ refreshToken });
+    let user = await userInstance.findOne({ refreshToken });
     if (!user) {
-      return res.status(401).send("invalid refresh token");
+      return res.send("Invalid token provided");
     }
     user.refreshToken = "";
     await user.save();
-    res.json({ message: "successfully logged out" });
+    return res.send("You have successfully logged out");
   } catch (error) {
-    res.status(500).json({ message: "fail to logout user" });
-  }
-});
-
-router.get("/get-protected", isLoggedIn, async (req, res) => {
-  try {
-    res.send("welcome, you have access to protected route");
-  } catch (error) {
-    res.send("error");
+    return res.send('failled to logout. Server error')
   }
 });
 
